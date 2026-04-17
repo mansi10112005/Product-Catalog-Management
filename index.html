@@ -1,0 +1,978 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>CatalogOS — Product Catalog Management</title>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Mono:ital,wght@0,400;0,700;1,400&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,500;0,9..40,700;1,9..40,400&display=swap" rel="stylesheet"/>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #0c0d10;
+      --surface: #13151a;
+      --surface2: #1c1f27;
+      --border: #252830;
+      --accent: #6ee7b7;
+      --accent2: #818cf8;
+      --accent3: #fb923c;
+      --warn: #f87171;
+      --text: #e2e8f0;
+      --muted: #64748b;
+      --mono: 'Space Mono', monospace;
+      --sans: 'DM Sans', sans-serif;
+    }
+
+    body {
+      font-family: var(--sans);
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      overflow-x: hidden;
+    }
+
+    .sidebar {
+      width: 240px;
+      min-height: 100vh;
+      background: var(--surface);
+      border-right: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      position: fixed;
+      top: 0; left: 0; bottom: 0;
+      z-index: 100;
+    }
+
+    .logo {
+      padding: 28px 24px 20px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .logo-text {
+      font-family: var(--mono);
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--accent);
+      letter-spacing: -0.5px;
+    }
+
+    .logo-sub {
+      font-size: 11px;
+      color: var(--muted);
+      margin-top: 3px;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+    }
+
+    .nav { padding: 16px 12px; flex: 1; }
+
+    .nav-section-label {
+      font-size: 10px;
+      color: var(--muted);
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      padding: 8px 12px 4px;
+      margin-top: 8px;
+    }
+
+    .nav-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 12px;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.15s;
+      font-size: 14px;
+      font-weight: 500;
+      color: var(--muted);
+      border: 1px solid transparent;
+      margin-bottom: 2px;
+    }
+
+    .nav-item:hover { background: var(--surface2); color: var(--text); }
+    .nav-item.active {
+      background: rgba(110,231,183,0.08);
+      color: var(--accent);
+      border-color: rgba(110,231,183,0.2);
+    }
+
+    .nav-icon { font-size: 16px; width: 20px; text-align: center; }
+
+    .sidebar-footer {
+      padding: 16px;
+      border-top: 1px solid var(--border);
+      font-size: 12px;
+      color: var(--muted);
+      font-family: var(--mono);
+    }
+
+    .main {
+      margin-left: 240px;
+      flex: 1;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .topbar {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: 16px 32px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: sticky;
+      top: 0;
+      z-index: 50;
+    }
+
+    .page-title {
+      font-size: 22px;
+      font-weight: 700;
+      letter-spacing: -0.5px;
+    }
+
+    .topbar-actions { display: flex; gap: 10px; align-items: center; }
+
+    .btn {
+      padding: 8px 16px;
+      border-radius: 8px;
+      border: none;
+      cursor: pointer;
+      font-family: var(--sans);
+      font-size: 13px;
+      font-weight: 600;
+      transition: all 0.15s;
+    }
+
+    .btn-primary { background: var(--accent); color: #0c0d10; }
+    .btn-primary:hover { background: #4ade80; transform: translateY(-1px); }
+    .btn-ghost { background: transparent; color: var(--muted); border: 1px solid var(--border); }
+    .btn-ghost:hover { color: var(--text); border-color: var(--muted); }
+
+    .content { padding: 32px; flex: 1; }
+
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 16px;
+      margin-bottom: 32px;
+    }
+
+    .stat-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 20px;
+      position: relative;
+      overflow: hidden;
+      transition: border-color 0.2s;
+    }
+
+    .stat-card:hover { border-color: var(--accent2); }
+
+    .stat-label {
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+      color: var(--muted);
+      margin-bottom: 10px;
+    }
+
+    .stat-value {
+      font-family: var(--mono);
+      font-size: 28px;
+      font-weight: 700;
+      line-height: 1;
+      margin-bottom: 6px;
+    }
+
+    .stat-sub { font-size: 12px; color: var(--muted); }
+    .stat-card:nth-child(1) .stat-value { color: var(--accent); }
+    .stat-card:nth-child(2) .stat-value { color: var(--accent2); }
+    .stat-card:nth-child(3) .stat-value { color: var(--accent3); }
+    .stat-card:nth-child(4) .stat-value { color: var(--warn); }
+
+    .filter-bar {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 16px 20px;
+      display: flex;
+      gap: 12px;
+      align-items: center;
+      margin-bottom: 20px;
+      flex-wrap: wrap;
+    }
+
+    .search-wrap { position: relative; flex: 1; min-width: 200px; }
+    .search-icon { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--muted); font-size: 14px; }
+
+    input, select, textarea {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      color: var(--text);
+      border-radius: 8px;
+      padding: 8px 12px;
+      font-family: var(--sans);
+      font-size: 13px;
+      outline: none;
+      transition: border-color 0.15s;
+      width: 100%;
+    }
+
+    .search-wrap input { padding-left: 36px; }
+    input:focus, select:focus, textarea:focus { border-color: var(--accent2); }
+
+    .table-wrap {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      overflow: hidden;
+    }
+
+    .table-header {
+      padding: 16px 20px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .table-title { font-size: 14px; font-weight: 600; }
+    .table-count { font-size: 12px; color: var(--muted); font-family: var(--mono); }
+
+    table { width: 100%; border-collapse: collapse; }
+
+    thead th {
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+      color: var(--muted);
+      font-weight: 600;
+      padding: 12px 20px;
+      text-align: left;
+      border-bottom: 1px solid var(--border);
+      background: rgba(255,255,255,0.01);
+    }
+
+    tbody tr {
+      border-bottom: 1px solid var(--border);
+      transition: background 0.12s;
+      cursor: pointer;
+    }
+
+    tbody tr:last-child { border-bottom: none; }
+    tbody tr:hover { background: rgba(255,255,255,0.025); }
+
+    td { padding: 14px 20px; font-size: 13px; vertical-align: middle; }
+
+    .product-name { font-weight: 600; color: var(--text); margin-bottom: 2px; }
+    .product-sku { font-family: var(--mono); font-size: 11px; color: var(--muted); }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      padding: 3px 8px;
+      border-radius: 4px;
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+    }
+
+    .badge-active { background: rgba(110,231,183,0.1); color: var(--accent); border: 1px solid rgba(110,231,183,0.2); }
+    .badge-draft { background: rgba(100,116,139,0.15); color: var(--muted); border: 1px solid var(--border); }
+    .badge-archived { background: rgba(251,146,60,0.1); color: var(--accent3); border: 1px solid rgba(251,146,60,0.2); }
+    .badge-inactive { background: rgba(248,113,113,0.1); color: var(--warn); border: 1px solid rgba(248,113,113,0.2); }
+
+    .stock-ok { color: var(--accent); font-family: var(--mono); font-weight: 600; }
+    .stock-low { color: var(--accent3); font-family: var(--mono); font-weight: 600; }
+    .stock-critical { color: var(--warn); font-family: var(--mono); font-weight: 600; }
+
+    .price { font-family: var(--mono); font-weight: 700; color: var(--accent); }
+    .price-original { text-decoration: line-through; color: var(--muted); font-size: 12px; }
+
+    .actions { display: flex; gap: 6px; opacity: 0; transition: opacity 0.15s; }
+    tr:hover .actions { opacity: 1; }
+
+    .action-btn {
+      padding: 4px 8px;
+      border-radius: 5px;
+      border: 1px solid var(--border);
+      background: var(--bg);
+      color: var(--muted);
+      cursor: pointer;
+      font-size: 12px;
+      transition: all 0.12s;
+    }
+    .action-btn:hover { color: var(--text); border-color: var(--muted); }
+    .action-btn.del:hover { color: var(--warn); border-color: var(--warn); }
+
+    .stars { color: #facc15; font-size: 11px; }
+    .stars-empty { color: var(--border); }
+
+    .cat-pill {
+      background: rgba(129,140,248,0.1);
+      color: var(--accent2);
+      border: 1px solid rgba(129,140,248,0.2);
+      padding: 3px 8px;
+      border-radius: 4px;
+      font-size: 11px;
+      font-weight: 600;
+    }
+
+    .pagination {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 16px 20px;
+      border-top: 1px solid var(--border);
+      font-size: 13px;
+      color: var(--muted);
+    }
+
+    .page-btns { display: flex; gap: 6px; }
+
+    .page-btn {
+      width: 32px; height: 32px;
+      border-radius: 6px;
+      border: 1px solid var(--border);
+      background: var(--bg);
+      color: var(--muted);
+      cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 13px;
+      transition: all 0.12s;
+      font-family: var(--mono);
+    }
+
+    .page-btn:hover, .page-btn.active { background: var(--accent); color: var(--bg); border-color: var(--accent); }
+
+    .overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.7);
+      backdrop-filter: blur(4px);
+      z-index: 200;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.2s;
+    }
+
+    .overlay.open { opacity: 1; pointer-events: all; }
+
+    .modal {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      width: 640px;
+      max-height: 90vh;
+      overflow-y: auto;
+      padding: 28px;
+      transform: scale(0.95) translateY(10px);
+      transition: transform 0.2s;
+    }
+
+    .overlay.open .modal { transform: scale(1) translateY(0); }
+
+    .modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 24px;
+    }
+
+    .modal-title { font-size: 18px; font-weight: 700; }
+
+    .modal-close {
+      width: 32px; height: 32px;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      background: transparent;
+      color: var(--muted);
+      cursor: pointer;
+      font-size: 16px;
+      transition: all 0.12s;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .modal-close:hover { color: var(--text); border-color: var(--muted); }
+
+    .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    .form-grid.full { grid-template-columns: 1fr; }
+
+    .field { display: flex; flex-direction: column; gap: 6px; }
+    .label { font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: var(--muted); font-weight: 600; }
+
+    .modal-footer {
+      display: flex;
+      gap: 10px;
+      justify-content: flex-end;
+      margin-top: 24px;
+      padding-top: 20px;
+      border-top: 1px solid var(--border);
+    }
+
+    .toast-wrap {
+      position: fixed;
+      bottom: 24px; right: 24px;
+      z-index: 999;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .toast {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 12px 16px;
+      font-size: 13px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      min-width: 280px;
+      animation: slideIn 0.25s ease;
+      border-left: 3px solid var(--accent);
+    }
+
+    .toast.error { border-left-color: var(--warn); }
+    .toast.warn { border-left-color: var(--accent3); }
+
+    @keyframes slideIn {
+      from { transform: translateX(40px); opacity: 0; }
+      to { transform: translateX(0); opacity: 1; }
+    }
+
+    .empty { text-align: center; padding: 60px 20px; color: var(--muted); }
+    .empty-icon { font-size: 40px; margin-bottom: 12px; }
+    .empty-title { font-size: 16px; font-weight: 600; color: var(--text); margin-bottom: 6px; }
+
+    .loading {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 60px;
+      color: var(--muted);
+      gap: 10px;
+    }
+
+    .spinner {
+      width: 18px; height: 18px;
+      border: 2px solid var(--border);
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+    }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .demo-banner {
+      background: linear-gradient(90deg, rgba(110,231,183,0.06), rgba(129,140,248,0.06));
+      border: 1px solid rgba(110,231,183,0.15);
+      border-radius: 10px;
+      padding: 12px 20px;
+      margin-bottom: 24px;
+      font-size: 13px;
+      color: var(--muted);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .demo-banner strong { color: var(--accent); }
+
+    .detail-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+    .detail-item { display: flex; flex-direction: column; gap: 4px; }
+    .detail-label { font-size: 11px; color: var(--muted); letter-spacing: 1px; text-transform: uppercase; }
+    .detail-value { font-size: 14px; font-weight: 500; }
+    .detail-value.mono { font-family: var(--mono); color: var(--accent); }
+
+    .reviews-list { margin-top: 12px; display: flex; flex-direction: column; gap: 10px; }
+    .review-item { background: var(--bg); border: 1px solid var(--border); border-radius: 8px; padding: 12px; }
+    .review-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; }
+    .reviewer-name { font-size: 13px; font-weight: 600; }
+    .review-comment { font-size: 13px; color: var(--muted); }
+
+    .tags-wrap { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 4px; }
+    .tag { background: rgba(100,116,139,0.12); border: 1px solid var(--border); padding: 2px 8px; border-radius: 4px; font-size: 11px; color: var(--muted); }
+  </style>
+</head>
+<body>
+
+<aside class="sidebar">
+  <div class="logo">
+    <div class="logo-text">CatalogOS</div>
+    <div class="logo-sub">Product Management</div>
+  </div>
+  <nav class="nav">
+    <div class="nav-section-label">Catalog</div>
+    <div class="nav-item active" onclick="showView('products', event)"><span class="nav-icon">📦</span> Products</div>
+    <div class="nav-item" onclick="showView('categories', event)"><span class="nav-icon">🗂️</span> Categories</div>
+    <div class="nav-section-label">Analytics</div>
+    <div class="nav-item" onclick="showView('stats', event)"><span class="nav-icon">📊</span> Dashboard</div>
+    <div class="nav-item" onclick="showView('lowstock', event)"><span class="nav-icon">⚠️</span> Low Stock</div>
+  </nav>
+  <div class="sidebar-footer">MongoDB • Mongoose<br/>Advanced DB Systems</div>
+</aside>
+
+<main class="main">
+  <div class="topbar">
+    <div class="page-title" id="page-title">Products</div>
+    <div class="topbar-actions">
+      <button class="btn btn-ghost" onclick="refreshData()">↻ Refresh</button>
+      <button class="btn btn-primary" id="add-btn" onclick="openAddModal()">+ Add Product</button>
+    </div>
+  </div>
+  <div class="content" id="content">
+    <div class="loading"><div class="spinner"></div> Loading data…</div>
+  </div>
+</main>
+
+<!-- Add/Edit Modal -->
+<div class="overlay" id="product-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title" id="modal-title">Add Product</div>
+      <button class="modal-close" onclick="closeModal()">✕</button>
+    </div>
+    <div class="form-grid">
+      <div class="field"><label class="label">Product Name *</label><input id="f-name" placeholder="e.g. Wireless Headphones" /></div>
+      <div class="field"><label class="label">SKU *</label><input id="f-sku" placeholder="e.g. ELEC-HP-001" /></div>
+      <div class="field"><label class="label">Category *</label><select id="f-category"><option value="">Select category…</option></select></div>
+      <div class="field"><label class="label">Brand</label><input id="f-brand" placeholder="e.g. Sony" /></div>
+      <div class="field"><label class="label">Base Price (USD) *</label><input id="f-price" type="number" step="0.01" placeholder="0.00" /></div>
+      <div class="field"><label class="label">Discounted Price</label><input id="f-discounted" type="number" step="0.01" placeholder="Leave blank if no discount" /></div>
+      <div class="field"><label class="label">Stock Quantity</label><input id="f-stock" type="number" placeholder="0" /></div>
+      <div class="field"><label class="label">Status</label>
+        <select id="f-status">
+          <option value="draft">Draft</option>
+          <option value="active">Active</option>
+          <option value="inactive">Inactive</option>
+          <option value="archived">Archived</option>
+        </select>
+      </div>
+      <div class="field"><label class="label">Tags (comma-separated)</label><input id="f-tags" placeholder="e.g. wireless, audio" /></div>
+      <div class="field"><label class="label">Featured</label><select id="f-featured"><option value="false">No</option><option value="true">Yes</option></select></div>
+    </div>
+    <div class="form-grid full" style="margin-top:16px">
+      <div class="field"><label class="label">Short Description</label><input id="f-shortdesc" placeholder="One-line summary" /></div>
+      <div class="field"><label class="label">Description *</label><textarea id="f-desc" rows="3" placeholder="Full product description…" style="resize:vertical"></textarea></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-primary" onclick="saveProduct()">Save Product</button>
+    </div>
+  </div>
+</div>
+
+<!-- View Modal -->
+<div class="overlay" id="view-modal">
+  <div class="modal" style="width:700px">
+    <div class="modal-header">
+      <div class="modal-title" id="view-modal-title">Product Details</div>
+      <button class="modal-close" onclick="closeViewModal()">✕</button>
+    </div>
+    <div id="view-modal-body"></div>
+  </div>
+</div>
+
+<div class="toast-wrap" id="toasts"></div>
+
+<script>
+  const API = 'http://10.175.234.1:5000/api';
+  let allProducts = [];
+  let allCategories = [];
+  let currentPage = 1;
+  const perPage = 20;
+  let editingId = null;
+  let currentView = 'products';
+  let filters = { q: '', category: '', status: '' };
+
+  const DEMO_CATEGORIES = [
+    { _id: 'cat1', name: 'Electronics', slug: 'electronics' },
+    { _id: 'cat2', name: 'Clothing', slug: 'clothing' },
+    { _id: 'cat3', name: 'Home & Kitchen', slug: 'home-kitchen' },
+    { _id: 'cat4', name: 'Books', slug: 'books' },
+    { _id: 'cat5', name: 'Sports & Fitness', slug: 'sports-fitness' },
+  ];
+
+  const DEMO_PRODUCTS = [
+    { _id: 'p1', name: 'Pro Wireless Headphones X200', sku: 'ELEC-HP-001', category: { _id: 'cat1', name: 'Electronics' }, brand: 'SoundWave', price: { base: 299.99, discounted: 239.99 }, stock: { quantity: 145, lowStockThreshold: 20 }, status: 'active', isFeatured: true, tags: ['headphones', 'wireless'], averageRating: 4.5, reviews: [{ reviewer: 'Alex M.', rating: 5, comment: 'Best headphones!', verified: true }], analytics: { views: 1240, purchases: 89 }, description: 'Premium noise-cancelling wireless headphones with 40-hour battery life.' },
+    { _id: 'p2', name: 'Ultra 4K Smart TV 55"', sku: 'ELEC-TV-002', category: { _id: 'cat1', name: 'Electronics' }, brand: 'VisionTech', price: { base: 799.00, discounted: 649.00 }, stock: { quantity: 30, lowStockThreshold: 5 }, status: 'active', isFeatured: true, tags: ['tv', '4k'], averageRating: 5, reviews: [{ reviewer: 'John D.', rating: 5, comment: 'Amazing picture!', verified: true }], analytics: { views: 3450, purchases: 21 }, description: 'Experience stunning 4K resolution with HDR10+ support.' },
+    { _id: 'p3', name: "Men's Merino Wool Sweater", sku: 'CLTH-SW-001', category: { _id: 'cat2', name: 'Clothing' }, brand: 'WoolCraft', price: { base: 120.00, discounted: null }, stock: { quantity: 8, lowStockThreshold: 10 }, status: 'active', isFeatured: false, tags: ['sweater', 'wool'], averageRating: 0, reviews: [], analytics: { views: 890, purchases: 44 }, description: 'Luxury 100% merino wool sweater, sustainably sourced.' },
+    { _id: 'p4', name: 'Stand Mixer Pro 6500', sku: 'HK-SM-001', category: { _id: 'cat3', name: 'Home & Kitchen' }, brand: 'ChefMaster', price: { base: 349.99, discounted: 299.00 }, stock: { quantity: 62, lowStockThreshold: 15 }, status: 'active', isFeatured: true, tags: ['mixer', 'baking'], averageRating: 4.5, reviews: [], analytics: { views: 1800, purchases: 67 }, description: '1200W professional stand mixer with 6.5L stainless steel bowl.' },
+    { _id: 'p5', name: 'Clean Code: Agile Software', sku: 'BK-PROG-001', category: { _id: 'cat4', name: 'Books' }, brand: 'Prentice Hall', price: { base: 49.99, discounted: 35.00 }, stock: { quantity: 250, lowStockThreshold: 30 }, status: 'active', isFeatured: false, tags: ['programming'], averageRating: 4.7, reviews: [], analytics: { views: 5200, purchases: 320 }, description: "Robert C. Martin's definitive guide to writing clean code." },
+    { _id: 'p6', name: 'Adjustable Dumbbell Set', sku: 'SP-DB-001', category: { _id: 'cat5', name: 'Sports & Fitness' }, brand: 'IronFlex', price: { base: 399.00, discounted: 329.00 }, stock: { quantity: 40, lowStockThreshold: 10 }, status: 'active', isFeatured: true, tags: ['dumbbells', 'fitness'], averageRating: 5, reviews: [], analytics: { views: 2600, purchases: 155 }, description: 'Space-saving adjustable dumbbell system replacing 15 pairs.' },
+    { _id: 'p7', name: 'Mechanical Gaming Keyboard', sku: 'ELEC-KB-003', category: { _id: 'cat1', name: 'Electronics' }, brand: 'KeyForge', price: { base: 159.99, discounted: 129.99 }, stock: { quantity: 5, lowStockThreshold: 10 }, status: 'active', isFeatured: false, tags: ['keyboard', 'gaming'], averageRating: 0, reviews: [], analytics: { views: 3100, purchases: 198 }, description: 'TKL mechanical keyboard with Cherry MX Blue switches and RGB.' },
+    { _id: 'p8', name: 'Yoga Mat Premium Non-Slip', sku: 'SP-YM-001', category: { _id: 'cat5', name: 'Sports & Fitness' }, brand: 'ZenFlow', price: { base: 79.99, discounted: null }, stock: { quantity: 180, lowStockThreshold: 25 }, status: 'active', isFeatured: false, tags: ['yoga', 'fitness'], averageRating: 0, reviews: [], analytics: { views: 720, purchases: 89 }, description: 'Eco-friendly TPE yoga mat with alignment guides.' },
+  ];
+
+  let useDemoData = false;
+
+  async function init() {
+    try {
+      const res = await fetch(`${API}/categories`, { signal: AbortSignal.timeout(3000) });
+      if (!res.ok) throw new Error();
+      const data = await res.json();
+      allCategories = data.data || [];
+    } catch {
+      useDemoData = true;
+      allCategories = DEMO_CATEGORIES;
+    }
+    await loadView('products');
+    populateCategoryDropdown();
+  }
+
+  function showView(view, event) {
+    currentView = view;
+    document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+    if (event && event.currentTarget) event.currentTarget.classList.add('active');
+    const titles = { products: 'Products', categories: 'Categories', stats: 'Dashboard Stats', lowstock: 'Low Stock Alerts' };
+    document.getElementById('page-title').textContent = titles[view] || view;
+    document.getElementById('add-btn').style.display = view === 'products' ? 'block' : 'none';
+    loadView(view);
+  }
+
+  async function loadView(view) {
+    currentPage = 1;
+    if (view === 'products') await loadProducts();
+    else if (view === 'categories') await loadCategories();
+    else if (view === 'stats') await loadStats();
+    else if (view === 'lowstock') await loadLowStock();
+  }
+
+  async function refreshData() { await loadView(currentView); toast('Refreshed', 'success'); }
+
+  async function loadProducts() {
+    showLoading();
+    try {
+      if (useDemoData) {
+        allProducts = [...DEMO_PRODUCTS];
+      } else {
+        const params = new URLSearchParams({ page: currentPage, limit: perPage });
+        if (filters.q) params.set('q', filters.q);
+        if (filters.category) params.set('category', filters.category);
+        if (filters.status) params.set('status', filters.status);
+        const res = await fetch(`${API}/products?${params}`);
+        const data = await res.json();
+        allProducts = data.products || [];
+      }
+      renderProducts(allProducts);
+    } catch { showError('Failed to load products'); }
+  }
+
+  function renderProducts(products) {
+    let filtered = products.filter(p => {
+      const q = filters.q.toLowerCase();
+      if (q && !p.name.toLowerCase().includes(q) && !p.sku.toLowerCase().includes(q) && !(p.brand||'').toLowerCase().includes(q)) return false;
+      if (filters.category && (p.category?._id || p.category) !== filters.category) return false;
+      if (filters.status && p.status !== filters.status) return false;
+      return true;
+    });
+
+    const total = filtered.length;
+    const paged = filtered.slice((currentPage - 1) * perPage, currentPage * perPage);
+    const stats = {
+      total: products.length,
+      active: products.filter(p => p.status === 'active').length,
+      lowStock: products.filter(p => p.stock.quantity <= p.stock.lowStockThreshold).length,
+      featured: products.filter(p => p.isFeatured).length,
+    };
+
+    document.getElementById('content').innerHTML = `
+      ${useDemoData ? '<div class="demo-banner">⚡ <strong>Demo Mode</strong> — Backend not detected. Run the server to connect to MongoDB.</div>' : ''}
+      <div class="stats-grid">
+        <div class="stat-card"><div class="stat-label">Total Products</div><div class="stat-value">${stats.total}</div><div class="stat-sub">in catalog</div></div>
+        <div class="stat-card"><div class="stat-label">Active</div><div class="stat-value">${stats.active}</div><div class="stat-sub">live products</div></div>
+        <div class="stat-card"><div class="stat-label">Low Stock</div><div class="stat-value">${stats.lowStock}</div><div class="stat-sub">need reorder</div></div>
+        <div class="stat-card"><div class="stat-label">Featured</div><div class="stat-value">${stats.featured}</div><div class="stat-sub">highlighted</div></div>
+      </div>
+      <div class="filter-bar">
+        <div class="search-wrap">
+          <span class="search-icon">🔍</span>
+          <input placeholder="Search by name, SKU, or brand…" value="${filters.q}" oninput="filters.q=this.value; currentPage=1; renderProducts(allProducts)" />
+        </div>
+        <select onchange="filters.category=this.value; currentPage=1; renderProducts(allProducts)" style="width:160px">
+          <option value="">All Categories</option>
+          ${allCategories.map(c => `<option value="${c._id}" ${filters.category===c._id?'selected':''}>${c.name}</option>`).join('')}
+        </select>
+        <select onchange="filters.status=this.value; currentPage=1; renderProducts(allProducts)" style="width:140px">
+          <option value="">All Statuses</option>
+          <option value="active">Active</option>
+          <option value="inactive">Inactive</option>
+          <option value="draft">Draft</option>
+          <option value="archived">Archived</option>
+        </select>
+        <button class="btn btn-ghost" onclick="filters={q:'',category:'',status:''}; renderProducts(allProducts)">Clear</button>
+      </div>
+      <div class="table-wrap">
+        <div class="table-header">
+          <div class="table-title">Product List</div>
+          <div class="table-count">${filtered.length} products</div>
+        </div>
+        ${paged.length === 0 ? `<div class="empty"><div class="empty-icon">📭</div><div class="empty-title">No products found</div></div>` : `
+        <table>
+          <thead><tr><th>Product</th><th>Category</th><th>Price</th><th>Stock</th><th>Rating</th><th>Status</th><th>Actions</th></tr></thead>
+          <tbody>
+            ${paged.map(p => {
+              const sc = p.stock.quantity === 0 ? 'stock-critical' : p.stock.quantity <= p.stock.lowStockThreshold ? 'stock-low' : 'stock-ok';
+              const disc = p.price.discounted;
+              return `<tr onclick="viewProduct('${p._id}')">
+                <td><div class="product-name">${p.name} ${p.isFeatured ? '⭐' : ''}</div><div class="product-sku">${p.sku}</div></td>
+                <td><span class="cat-pill">${p.category?.name || '—'}</span></td>
+                <td><div class="price">$${disc ? disc.toFixed(2) : p.price.base.toFixed(2)}</div>${disc ? `<div class="price-original">$${p.price.base.toFixed(2)}</div>` : ''}</td>
+                <td><span class="${sc}">${p.stock.quantity}</span></td>
+                <td>${renderStars(p.averageRating || 0)}</td>
+                <td><span class="badge badge-${p.status}">${p.status}</span></td>
+                <td onclick="event.stopPropagation()"><div class="actions">
+                  <button class="action-btn" onclick="editProduct('${p._id}')">✏️</button>
+                  <button class="action-btn del" onclick="deleteProduct('${p._id}', '${p.name.replace(/'/g,'')}')">🗑️</button>
+                </div></td>
+              </tr>`;
+            }).join('')}
+          </tbody>
+        </table>
+        ${renderPagination(Math.ceil(filtered.length / perPage))}`}
+      </div>`;
+  }
+
+  function renderStars(rating) {
+    if (!rating) return '<span class="stars-empty">— no reviews</span>';
+    const full = Math.floor(rating);
+    return `<span class="stars">${'★'.repeat(full)}${'☆'.repeat(5-full)}</span> <span style="font-size:11px;color:var(--muted)">${rating}</span>`;
+  }
+
+  function renderPagination(totalPages) {
+    if (totalPages <= 1) return '';
+    return `<div class="pagination">
+      <span>Page ${currentPage} of ${totalPages}</span>
+      <div class="page-btns">
+        <button class="page-btn" onclick="goPage(${currentPage-1})" ${currentPage===1?'disabled style="opacity:0.3"':''}>‹</button>
+        ${Array.from({length:totalPages},(_,i)=>i+1).map(p=>`<button class="page-btn ${p===currentPage?'active':''}" onclick="goPage(${p})">${p}</button>`).join('')}
+        <button class="page-btn" onclick="goPage(${currentPage+1})" ${currentPage===totalPages?'disabled style="opacity:0.3"':''}>›</button>
+      </div>
+    </div>`;
+  }
+
+  function goPage(p) { currentPage = p; renderProducts(allProducts); window.scrollTo(0,0); }
+
+  function viewProduct(id) {
+    const p = allProducts.find(x => x._id === id);
+    if (!p) return;
+    const disc = p.price.discounted;
+    const discPct = disc ? Math.round((1 - disc/p.price.base)*100) : 0;
+    document.getElementById('view-modal-title').textContent = p.name;
+    document.getElementById('view-modal-body').innerHTML = `
+      <div class="detail-grid">
+        <div class="detail-item"><div class="detail-label">SKU</div><div class="detail-value mono">${p.sku}</div></div>
+        <div class="detail-item"><div class="detail-label">Brand</div><div class="detail-value">${p.brand||'—'}</div></div>
+        <div class="detail-item"><div class="detail-label">Category</div><div class="detail-value">${p.category?.name||'—'}</div></div>
+        <div class="detail-item"><div class="detail-label">Status</div><div class="detail-value"><span class="badge badge-${p.status}">${p.status}</span></div></div>
+        <div class="detail-item"><div class="detail-label">Base Price</div><div class="detail-value mono">$${p.price.base.toFixed(2)}</div></div>
+        <div class="detail-item"><div class="detail-label">Discounted</div><div class="detail-value mono">${disc?`$${disc.toFixed(2)} (${discPct}% off)`:'—'}</div></div>
+        <div class="detail-item"><div class="detail-label">Stock</div><div class="detail-value mono">${p.stock.quantity} units</div></div>
+        <div class="detail-item"><div class="detail-label">Featured</div><div class="detail-value">${p.isFeatured?'⭐ Yes':'No'}</div></div>
+        <div class="detail-item"><div class="detail-label">Views</div><div class="detail-value mono">${(p.analytics?.views||0).toLocaleString()}</div></div>
+        <div class="detail-item"><div class="detail-label">Purchases</div><div class="detail-value mono">${(p.analytics?.purchases||0).toLocaleString()}</div></div>
+      </div>
+      ${p.tags?.length?`<div style="margin-top:16px"><div class="detail-label" style="margin-bottom:6px">Tags</div><div class="tags-wrap">${p.tags.map(t=>`<span class="tag">#${t}</span>`).join('')}</div></div>`:''}
+      <div style="margin-top:16px"><div class="detail-label" style="margin-bottom:6px">Description</div><div style="font-size:13px;color:var(--muted);line-height:1.6">${p.description}</div></div>
+      ${p.reviews?.length?`<div style="margin-top:20px"><div class="detail-label" style="margin-bottom:8px">Reviews (${p.reviews.length})</div><div class="reviews-list">${p.reviews.slice(0,3).map(r=>`<div class="review-item"><div class="review-header"><div class="reviewer-name">${r.reviewer} ${r.verified?'✓':''}</div><div class="stars">${'★'.repeat(r.rating)}${'☆'.repeat(5-r.rating)}</div></div><div class="review-comment">${r.comment||''}</div></div>`).join('')}</div></div>`:''}
+      <div class="modal-footer">
+        <button class="btn btn-ghost" onclick="closeViewModal()">Close</button>
+        <button class="btn btn-primary" onclick="closeViewModal(); editProduct('${p._id}')">Edit Product</button>
+      </div>`;
+    document.getElementById('view-modal').classList.add('open');
+  }
+
+  function closeViewModal() { document.getElementById('view-modal').classList.remove('open'); }
+
+  async function loadCategories() {
+    showLoading();
+    const cats = useDemoData ? DEMO_CATEGORIES : allCategories;
+    document.getElementById('content').innerHTML = `
+      ${useDemoData?'<div class="demo-banner">⚡ <strong>Demo Mode</strong></div>':''}
+      <div class="table-wrap">
+        <div class="table-header"><div class="table-title">Categories</div><div class="table-count">${cats.length} categories</div></div>
+        <table>
+          <thead><tr><th>#</th><th>Name</th><th>Slug</th><th>Description</th><th>Products</th></tr></thead>
+          <tbody>${cats.map((c,i)=>{
+            const count = DEMO_PRODUCTS.filter(p=>p.category?._id===c._id).length;
+            return `<tr><td style="font-family:var(--mono);color:var(--muted)">${String(i+1).padStart(2,'0')}</td><td><strong>${c.name}</strong></td><td><span style="font-family:var(--mono);font-size:12px;color:var(--accent2)">${c.slug}</span></td><td style="color:var(--muted)">${c.description||'—'}</td><td><span style="font-family:var(--mono);color:var(--accent)">${count}</span></td></tr>`;
+          }).join('')}</tbody>
+        </table>
+      </div>`;
+  }
+
+  async function loadStats() {
+    showLoading();
+    const products = useDemoData ? DEMO_PRODUCTS : allProducts;
+    const cats = useDemoData ? DEMO_CATEGORIES : allCategories;
+    const totalRevenue = products.reduce((s,p)=>s+(p.price.discounted||p.price.base)*p.stock.quantity,0);
+    const avgPrice = products.length ? products.reduce((s,p)=>s+p.price.base,0)/products.length : 0;
+    const totalViews = products.reduce((s,p)=>s+(p.analytics?.views||0),0);
+    const topProducts = [...products].sort((a,b)=>(b.analytics?.views||0)-(a.analytics?.views||0)).slice(0,5);
+    const catStats = cats.map(c=>{const ps=products.filter(p=>p.category?._id===c._id);return{name:c.name,count:ps.length,avgPrice:ps.length?ps.reduce((s,p)=>s+p.price.base,0)/ps.length:0};}).filter(c=>c.count>0);
+
+    document.getElementById('content').innerHTML = `
+      ${useDemoData?'<div class="demo-banner">⚡ <strong>Demo Mode</strong></div>':''}
+      <div class="stats-grid">
+        <div class="stat-card"><div class="stat-label">Catalog Value</div><div class="stat-value">$${(totalRevenue/1000).toFixed(0)}K</div><div class="stat-sub">stock × price</div></div>
+        <div class="stat-card"><div class="stat-label">Avg Price</div><div class="stat-value">$${avgPrice.toFixed(0)}</div><div class="stat-sub">across all products</div></div>
+        <div class="stat-card"><div class="stat-label">Total Views</div><div class="stat-value">${(totalViews/1000).toFixed(1)}K</div><div class="stat-sub">page visits</div></div>
+        <div class="stat-card"><div class="stat-label">Categories</div><div class="stat-value">${cats.length}</div><div class="stat-sub">active groups</div></div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+        <div class="table-wrap">
+          <div class="table-header"><div class="table-title">Top Products by Views</div></div>
+          <table><thead><tr><th>Product</th><th>Views</th><th>Purchases</th></tr></thead><tbody>
+            ${topProducts.map(p=>`<tr><td><div class="product-name" style="font-size:13px">${p.name}</div></td><td><span style="font-family:var(--mono);color:var(--accent2)">${(p.analytics?.views||0).toLocaleString()}</span></td><td><span style="font-family:var(--mono);color:var(--accent)">${(p.analytics?.purchases||0).toLocaleString()}</span></td></tr>`).join('')}
+          </tbody></table>
+        </div>
+        <div class="table-wrap">
+          <div class="table-header"><div class="table-title">Products by Category</div></div>
+          <table><thead><tr><th>Category</th><th>Count</th><th>Avg Price</th></tr></thead><tbody>
+            ${catStats.map(c=>`<tr><td><span class="cat-pill">${c.name}</span></td><td><span style="font-family:var(--mono);color:var(--accent)">${c.count}</span></td><td><span style="font-family:var(--mono);color:var(--muted)">$${c.avgPrice.toFixed(0)}</span></td></tr>`).join('')}
+          </tbody></table>
+        </div>
+      </div>`;
+  }
+
+  async function loadLowStock() {
+    showLoading();
+    const products = useDemoData ? DEMO_PRODUCTS : allProducts;
+    const lowStock = products.filter(p => p.stock.quantity <= p.stock.lowStockThreshold);
+    document.getElementById('content').innerHTML = `
+      <div class="table-wrap">
+        <div class="table-header"><div class="table-title">⚠️ Low Stock Alerts</div><div class="table-count">${lowStock.length} items</div></div>
+        ${lowStock.length===0?`<div class="empty"><div class="empty-icon">✅</div><div class="empty-title">All stocked up!</div></div>`:`
+        <table><thead><tr><th>Product</th><th>SKU</th><th>Current Stock</th><th>Threshold</th><th>Status</th></tr></thead><tbody>
+          ${lowStock.map(p=>`<tr><td><div class="product-name">${p.name}</div></td><td><span class="product-sku">${p.sku}</span></td><td><span class="${p.stock.quantity===0?'stock-critical':'stock-low'}">${p.stock.quantity} left</span></td><td><span style="font-family:var(--mono);color:var(--muted)">${p.stock.lowStockThreshold}</span></td><td><span class="badge badge-${p.status}">${p.status}</span></td></tr>`).join('')}
+        </tbody></table>`}
+      </div>`;
+  }
+
+  function populateCategoryDropdown() {
+    const sel = document.getElementById('f-category');
+    sel.innerHTML = '<option value="">Select category…</option>' + allCategories.map(c=>`<option value="${c._id}">${c.name}</option>`).join('');
+  }
+
+  function openAddModal() {
+    editingId = null;
+    document.getElementById('modal-title').textContent = 'Add Product';
+    ['f-name','f-sku','f-brand','f-price','f-discounted','f-stock','f-tags','f-shortdesc','f-desc'].forEach(id => document.getElementById(id).value = '');
+    document.getElementById('f-status').value = 'draft';
+    document.getElementById('f-featured').value = 'false';
+    document.getElementById('f-category').value = '';
+    document.getElementById('product-modal').classList.add('open');
+  }
+
+  function editProduct(id) {
+    const p = allProducts.find(x => x._id === id);
+    if (!p) return;
+    editingId = id;
+    document.getElementById('modal-title').textContent = 'Edit Product';
+    document.getElementById('f-name').value = p.name;
+    document.getElementById('f-sku').value = p.sku;
+    document.getElementById('f-brand').value = p.brand || '';
+    document.getElementById('f-price').value = p.price.base;
+    document.getElementById('f-discounted').value = p.price.discounted || '';
+    document.getElementById('f-stock').value = p.stock.quantity;
+    document.getElementById('f-status').value = p.status;
+    document.getElementById('f-featured').value = String(p.isFeatured);
+    document.getElementById('f-category').value = p.category?._id || '';
+    document.getElementById('f-tags').value = (p.tags||[]).join(', ');
+    document.getElementById('f-shortdesc').value = p.shortDescription || '';
+    document.getElementById('f-desc').value = p.description || '';
+    document.getElementById('product-modal').classList.add('open');
+  }
+
+  function closeModal() { document.getElementById('product-modal').classList.remove('open'); }
+
+  async function saveProduct() {
+    const name = document.getElementById('f-name').value.trim();
+    const sku = document.getElementById('f-sku').value.trim().toUpperCase();
+    const category = document.getElementById('f-category').value;
+    const price = parseFloat(document.getElementById('f-price').value);
+    const desc = document.getElementById('f-desc').value.trim();
+
+    if (!name || !sku || !category || !price || !desc) { toast('Please fill in all required fields', 'error'); return; }
+
+    const body = {
+      name, sku, category,
+      brand: document.getElementById('f-brand').value.trim(),
+      price: { base: price, discounted: parseFloat(document.getElementById('f-discounted').value) || null },
+      stock: { quantity: parseInt(document.getElementById('f-stock').value) || 0 },
+      status: document.getElementById('f-status').value,
+      isFeatured: document.getElementById('f-featured').value === 'true',
+      tags: document.getElementById('f-tags').value.split(',').map(t=>t.trim()).filter(Boolean),
+      shortDescription: document.getElementById('f-shortdesc').value.trim(),
+      description: desc,
+    };
+
+    if (useDemoData) {
+      if (editingId) {
+        const idx = allProducts.findIndex(p => p._id === editingId);
+        if (idx !== -1) allProducts[idx] = { ...allProducts[idx], ...body, category: allCategories.find(c=>c._id===category)||{_id:category,name:'Unknown'} };
+        toast('Product updated (demo mode)', 'success');
+      } else {
+        const newP = { _id: 'p'+Date.now(), ...body, category: allCategories.find(c=>c._id===category)||{_id:category,name:'Unknown'}, analytics:{views:0,purchases:0}, reviews:[], averageRating:0 };
+        allProducts.unshift(newP);
+        toast('Product added (demo mode)', 'success');
+      }
+      closeModal(); renderProducts(allProducts); return;
+    }
+
+    try {
+      const url = editingId ? `${API}/products/${editingId}` : `${API}/products`;
+      const method = editingId ? 'PUT' : 'POST';
+      const res = await fetch(url, { method, headers: {'Content-Type':'application/json'}, body: JSON.stringify(body) });
+      const data = await res.json();
+      if (!data.success) throw new Error(data.error || 'Save failed');
+      toast(editingId ? 'Product updated!' : 'Product created!', 'success');
+      closeModal();
+      await loadProducts();
+    } catch(err) { toast(err.message, 'error'); }
+  }
+
+  async function deleteProduct(id, name) {
+    if (!confirm(`Delete "${name}"? This cannot be undone.`)) return;
+    if (useDemoData) {
+      const idx = allProducts.findIndex(p => p._id === id);
+      if (idx !== -1) allProducts.splice(idx, 1);
+      toast(`"${name}" deleted`, 'warn'); renderProducts(allProducts); return;
+    }
+    try {
+      const res = await fetch(`${API}/products/${id}`, { method: 'DELETE' });
+      const data = await res.json();
+      if (!data.success) throw new Error(data.error);
+      toast(`"${name}" deleted`, 'warn');
+      await loadProducts();
+    } catch(err) { toast(err.message, 'error'); }
+  }
+
+  function showLoading() { document.getElementById('content').innerHTML = `<div class="loading"><div class="spinner"></div> Loading…</div>`; }
+  function showError(msg) { document.getElementById('content').innerHTML = `<div class="empty"><div class="empty-icon">❌</div><div class="empty-title">${msg}</div></div>`; }
+
+  function toast(msg, type='success') {
+    const wrap = document.getElementById('toasts');
+    const el = document.createElement('div');
+    el.className = `toast ${type}`;
+    el.innerHTML = `<span>${{success:'✅',error:'❌',warn:'⚠️'}[type]||'ℹ️'}</span><span>${msg}</span>`;
+    wrap.appendChild(el);
+    setTimeout(() => el.remove(), 3500);
+  }
+
+  document.getElementById('product-modal').addEventListener('click', e => { if(e.target===e.currentTarget) closeModal(); });
+  document.getElementById('view-modal').addEventListener('click', e => { if(e.target===e.currentTarget) closeViewModal(); });
+
+  init();
+</script>
+</body>
+</html>
